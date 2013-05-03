@@ -10,8 +10,9 @@ float->void filter FloatPrinter
 
 public class FloatPrinter[T] extends Sink[T]
 {
-    def work() {
-        Console.OUT.println(pop());
+    def this() {super(1);}
+    public def work() {
+        Console.OUT.println(pop() as Any);
     }
 }
 
