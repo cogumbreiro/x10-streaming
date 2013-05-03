@@ -7,20 +7,14 @@ float->float pipeline FFTReorder(int n) {
 }
 */
 
-public class FFTReorder implements (Clocked)=>void {
-    val n:Int;
-    def this(n:Int) {this.n = n;}
-    public operator this(var in:Clocked[T]) {
-        for (i:Int = 1; i<(n/2); i*= 2) {
-            val out = Clocked();
-            async clocked(in.clock) {
-                
-            }
-            in = Clocked();
+public class FFTReorder(n:Int) {
+    def pipeline[T]():Filter[T,T] {
+        var filter:Filter[T,T] = null;
+        for (var i:Int = 1; i<(n/2); i*= 2) {
+            filter = filter.add(new FFTReorderSimple[T](n/i));
         }
+        return filter;
     }
-   
-    
 }
 
 

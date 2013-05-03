@@ -31,28 +31,29 @@ float->float filter FFTReorderSimple(int n) {
 }
 */
 
-class FFTReorderSimple[T] extends Filter[T] implements (Clocked)=>void  {
+class FFTReorderSimple[T](n:Int) extends Filter[T,T] {
     val totalData:Int;
     def this(n:Int) {
-        this.totalData=2*n;
+        super(2*n);
+        property(n);
+        totalData = 2*n;
     }
-    public operator this(in:Clocked[T]) {
-        val inBuffer = new InStream(in, 2 * n);
+    public def work() {
         for (var i:Int = 0; i < totalData; i+=4)
         {
-            push(inBuffer.peek(i));
-            push(inBuffer.peek(i + 1));
+            push(peek(i));
+            push(peek(i + 1));
         }
         for (var i:Int = 2; i < totalData; i+=4)
         {
-            push(inBuffer.peek(i));
-            push(inBuffer.peek(i+1));
+            push(peek(i));
+            push(peek(i+1));
         }
         
-        for (i=0;i<n;i++)
+        for (var i:Int=0;i<n;i++)
         {
-            inBuffer.pop();
-            inBuffer.pop();
+            pop();
+            pop();
         }
     }
 }
