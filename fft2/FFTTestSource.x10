@@ -13,7 +13,7 @@ void->float filter FFTTestSource(int N) {
   }
 }
 */
-public class FFTTestSource extends Source[Float] {
+public class FFTTestSource extends Filter[Any,Float] {
     val N:Int;
     def this(N:Int) { this.N=N;}
     public def work() {
