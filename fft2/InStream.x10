@@ -17,8 +17,8 @@ public class InStream[T](size:Int) {
     
     def peek(idx:Int) {
         for ([i] in idx..(buffer.size())) {
-            buffer.add(clock());
             clock.next();
+            buffer.add(clock());
         }
         return buffer.get(idx);
     }
