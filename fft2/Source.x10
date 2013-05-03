@@ -1,4 +1,4 @@
-class Source[T](clock:Clock) {
+abstract class Source[T](clock:Clock) implements StreamNode {
     var isAlive:Boolean = true;
     val out:Clocked[T];
     

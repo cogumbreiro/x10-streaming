@@ -1,5 +1,5 @@
 class Process {
-    def bind(source:Source[T], sink:Sink[T]) {
+    def bind[T](source:Source[T], sink:Sink[T]) {
         sink.inStream = source.createInStream(sink.inSize);
         async clocked(source.clock) {
             while(source.isAlive) {
@@ -7,7 +7,7 @@ class Process {
             }
         }
         async clocked(source.clock) {
-            while(sink.isAlive) {
+            while(source.isAlive) {
                 sink.work();
             }
         }
