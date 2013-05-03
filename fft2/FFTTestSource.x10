@@ -16,7 +16,7 @@ void->float filter FFTTestSource(int N) {
 public class FFTTestSource extends Source[Float] {
     val N:Int;
     def this(N:Int) { this.N=N;}
-    def work() {
+    public def work() {
         push(0.0f);
         push(0.0f);
         push(1.0f);
