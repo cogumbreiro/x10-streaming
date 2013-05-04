@@ -1,12 +1,12 @@
 import x10.util.ArrayList;
 
-public class InStream[T](size:Int) {
+public class InStream[T](size:Int, clock:Clock) {
     var buffer:ArrayList[T];
-    val clock:Clocked[T];
+    val clockedValue:Clocked[T];
     
-    def this(clock:Clocked[T], size:Int) {
-        property(size);
-        this.clock = clock;
+    def this(clockedValue:Clocked[T], size:Int) {
+        property(size, clockedValue.clock);
+        this.clockedValue = clockedValue;
         this.buffer = new ArrayList[T](size);
     }
     
@@ -16,9 +16,9 @@ public class InStream[T](size:Int) {
     }
     
     def peek(idx:Int) {
-        for ([i] in idx..(buffer.size())) {
-            clock.next();
-            buffer.add(clock());
+        for ([i] in idx..buffer.size()) {
+            clockedValue.next();
+            buffer.add(clockedValue());
         }
         return buffer.get(idx);
     }
