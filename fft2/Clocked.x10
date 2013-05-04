@@ -30,7 +30,7 @@ public class Clocked[T](clock:Clock) implements ()=>T{
 
     /** Construct a Clocked[T] with initial value x, clock c, and name "".
      */
-    public def this(x:T, c:Clock) {
+    public def this(c:Clock) {
       this(c, "");
     }
 
