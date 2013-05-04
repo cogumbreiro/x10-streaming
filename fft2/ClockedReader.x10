@@ -1,6 +1,6 @@
 import x10.util.ArrayList;
 
-public class ClockedInStream[T](size:Int, clock:Clock) implements InStream[T] {
+public class ClockedReader[T](size:Int, clock:Clock) implements Reader[T] {
     var buffer:ArrayList[T];
     val clockedValue:Clocked[T];
     

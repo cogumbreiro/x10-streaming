@@ -1,6 +1,6 @@
 abstract class Filter[I,O](clock:Clock, inSize:Int) implements StreamNode {
     private var isAlive:Boolean = true;
-    private var inStream:InStream[I];
+    private var reader:Reader[I];
     private val out:Clocked[O];
     
     public def this() {
@@ -14,11 +14,11 @@ abstract class Filter[I,O](clock:Clock, inSize:Int) implements StreamNode {
     }
     
     public def pop():I {
-        return inStream.pop();
+        return reader.pop();
     }
     
     public def peek(idx:Int):I {
-        return inStream.peek(idx);
+        return reader.peek(idx);
     }
     
     public def push(value:O) {
@@ -39,8 +39,12 @@ abstract class Filter[I,O](clock:Clock, inSize:Int) implements StreamNode {
         return sink;
     }
     
+    public def setReader(reader:Reader[I]) {
+        this.reader = reader;
+    }
+    
     public def launch(inValues:Clocked[I], parent:StreamNode) {
-        inStream = new ClockedInStream[I](inValues, inSize);
+        reader = new ClockedReader[I](inValues, inSize);
         async clocked(inValues.clock) {
             while(parent.isAlive()) {
                 work();
