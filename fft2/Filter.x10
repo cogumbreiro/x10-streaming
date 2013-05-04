@@ -1,7 +1,7 @@
 abstract class Filter[I,O](clock:Clock, inSize:Int) implements StreamNode {
-    var alive:Boolean = true;
-    var inStream:InStream[I];
-    val out:Clocked[O];
+    private var isAlive:Boolean = true;
+    private var inStream:InStream[I];
+    private val out:Clocked[O];
     
     public def this() {
         this(1);
@@ -27,29 +27,30 @@ abstract class Filter[I,O](clock:Clock, inSize:Int) implements StreamNode {
     }
     
     public def eof():void {
-        alive = false;
+        isAlive = false;
     }
     
     public def isAlive():Boolean {
-        return alive;
+        return isAlive;
     }
     
     public def add[T](sink:Filter[O,T]):Filter[O,T] {
-        sink.inStream = new InStream[O](out, sink.inSize);
-        sink.launch(() => isAlive());
+        sink.launch(out, this);
         return sink;
     }
     
-    public def launch(isAliveCb:() => Boolean) {
-        async clocked(inStream.clock) {
-            while(isAliveCb()) {
+    public def launch(inValues:Clocked[I], parent:StreamNode) {
+        inStream = new ClockedInStream[I](inValues, inSize);
+        async clocked(inValues.clock) {
+            while(parent.isAlive()) {
                 work();
             }
+            eof();
         }
     }
     
     def launch() {
-        while(alive) {
+        while(isAlive) {
             work();
         }
     }

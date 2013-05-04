@@ -1,4 +1,7 @@
 interface StreamNode {
+    /**
+     * Runs an iteration of work.
+     */
     def work():void;
-    def launch(isAlive:() => Boolean):void;
+    def isAlive():Boolean;
 }
