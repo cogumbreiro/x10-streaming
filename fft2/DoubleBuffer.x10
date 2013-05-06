@@ -18,14 +18,16 @@ public class DoubleBuffer[T](clock:Clock, reader:DoubleBuffer.Reader[T], writer:
                  new Writer[T](clock, buffer));
         this.buffer = buffer;
     }
+    public def this() {T haszero} {
+        this(Clock.make());
+    }
 
-    public static final class Reader[T] implements ()=>T {
+    public static final class Reader[T](clock:Clock) implements ()=>T {
         private val buffer:Array[T](1);
         private var idx:Int = 0;
-        private val clock:Clock;
         public def this(clock:Clock, buffer:Array[T](1)) {
+            property(clock);
             this.buffer = buffer;
-            this.clock = clock;
         }
         public def get():T {
             clock.advance();
@@ -40,13 +42,12 @@ public class DoubleBuffer[T](clock:Clock, reader:DoubleBuffer.Reader[T], writer:
         }
     }
     
-    public static final class Writer[T] implements (T)=>void {
+    public static final class Writer[T](clock:Clock) implements (T)=>void {
         private val buffer:Array[T](1);
         private var idx:Int = 0;
-        private val clock:Clock;
         public def this(clock:Clock, buffer:Array[T](1)) {
+            property(clock);
             this.buffer = buffer;
-            this.clock = clock;
         }
         public def set(value:T):void {
             buffer(idx) = value;
