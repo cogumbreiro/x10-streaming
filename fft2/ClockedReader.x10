@@ -2,11 +2,11 @@ import x10.util.ArrayList;
 
 public class ClockedReader[T](size:Int, clock:Clock) implements Reader[T] {
     var buffer:ArrayList[T];
-    val clockedValue:Clocked[T];
+    val dbReader:DoubleBuffer.Reader[T];
     
-    def this(clockedValue:Clocked[T], size:Int) {
-        property(size, clockedValue.clock);
-        this.clockedValue = clockedValue;
+    def this(dbReader:DoubleBuffer.Reader[T], size:Int) {
+        property(size, dbReader.clock);
+        this.dbReader = dbReader;
         this.buffer = new ArrayList[T](size);
     }
     
@@ -17,8 +17,7 @@ public class ClockedReader[T](size:Int, clock:Clock) implements Reader[T] {
     
     public def peek(idx:Int) {
         for ([i] in idx..buffer.size()) {
-            clockedValue.next();
-            buffer.add(clockedValue());
+            buffer.add(dbReader());
         }
         return buffer.get(idx);
     }

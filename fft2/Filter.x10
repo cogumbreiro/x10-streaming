@@ -1,14 +1,14 @@
 abstract class Filter[I,O](clock:Clock, inSize:Int) implements StreamNode {
     private var isAlive:Boolean = true;
     private var reader:Reader[I];
-    private val out:Clocked[O];
+    private val out:DoubleBuffer[O];
     
-    public def this() {
+    public def this() {O haszero} {
         this(1);
     }
     
-    public def this(inSize:Int) {
-        val tmp = new Clocked[O]();
+    public def this(inSize:Int) {O haszero} {
+        val tmp = new DoubleBuffer[O]();
         property(tmp.clock, inSize);
         this.out = tmp;
     }
@@ -22,8 +22,7 @@ abstract class Filter[I,O](clock:Clock, inSize:Int) implements StreamNode {
     }
     
     public def push(value:O) {
-        out() = value;
-        out.next();
+        out.writer() = value;
     }
     
     public def eof():void {
@@ -34,7 +33,7 @@ abstract class Filter[I,O](clock:Clock, inSize:Int) implements StreamNode {
         return isAlive;
     }
     
-    public def add[T](sink:Filter[O,T]):Filter[O,T] {
+    public def add[T](sink:Filter[O,T]):Filter[O,T] {T haszero} {
         sink.launch(out, this);
         return sink;
     }
@@ -43,8 +42,8 @@ abstract class Filter[I,O](clock:Clock, inSize:Int) implements StreamNode {
         this.reader = reader;
     }
     
-    public def launch(inValues:Clocked[I], parent:StreamNode) {
-        reader = new ClockedReader[I](inValues, inSize);
+    public def launch(inValues:DoubleBuffer[I], parent:StreamNode) {
+        reader = new ClockedReader[I](inValues.reader, inSize);
         async clocked(inValues.clock) {
             while(parent.isAlive()) {
                 work();
