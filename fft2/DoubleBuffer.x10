@@ -70,13 +70,14 @@ public class DoubleBuffer[T](clock:Clock, reader:DoubleBuffer.Reader[T], writer:
         finish async {
             val clock = Clock.make();
             val db = new DoubleBuffer[Int](clock);
+            val N = 10;
             async clocked(clock) {
-                for (p in 1..10) {
-                    db.writer() = p;
+                for (p in 1..N) {
+                    db.writer() = p * 2;
                 }
             }
             async clocked(clock) {
-                for (p in 1..10) {
+                for (p in 1..N) {
                     Console.OUT.println(db.reader());
                 }
             }
