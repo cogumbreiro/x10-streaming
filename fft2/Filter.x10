@@ -1,4 +1,4 @@
-abstract class Filter[I,O](clock:Clock, inSize:Int) implements StreamNode {
+abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
     private var isAlive:Boolean = true;
     private var reader:Reader[I];
     private val out:DoubleBuffer[O];
@@ -7,10 +7,17 @@ abstract class Filter[I,O](clock:Clock, inSize:Int) implements StreamNode {
         this(1);
     }
     
-    public def this(inSize:Int) {O haszero} {
-        val tmp = new DoubleBuffer[O]();
-        property(tmp.clock, inSize);
-        this.out = tmp;
+    public def this(inputCount:Int) {O haszero} {
+        this(inputCount, Clock.make());
+    }
+    
+    public def this(inputCount:Int, clock:Clock) {O haszero} {
+        this(new DoubleBuffer[O](clock), inputCount);
+    }
+    
+    public def this(out:DoubleBuffer[O], inSize:Int) {
+        property(out.clock, inSize);
+        this.out = out;
     }
     
     public def pop():I {
@@ -43,7 +50,7 @@ abstract class Filter[I,O](clock:Clock, inSize:Int) implements StreamNode {
     }
     
     public def launch(inValues:DoubleBuffer[I], parent:StreamNode) {
-        reader = new ClockedReader[I](inValues.reader, inSize);
+        reader = new ClockedReader[I](inValues.reader, inputCount);
         async clocked(inValues.clock) {
             while(parent.isAlive()) {
                 work();
