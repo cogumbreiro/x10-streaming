@@ -1,7 +1,7 @@
 abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
     private var isAlive:Boolean = true;
     private var reader:Reader[I];
-    private val out:DoubleBuffer[O];
+    private var output:DoubleBuffer[O];
     
     public def this() {O haszero} {
         this(1);
@@ -17,7 +17,7 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
     
     public def this(out:DoubleBuffer[O], inSize:Int) {
         property(out.clock, inSize);
-        this.out = out;
+        this.output = out;
     }
     
     public def pop():I {
@@ -29,7 +29,7 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
     }
     
     public def push(value:O) {
-        out.writer() = value;
+        output.writer() = value;
     }
     
     public def eof():void {
@@ -41,7 +41,7 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
     }
     
     public def add[T](sink:Filter[O,T]):Filter[O,T] {
-        sink.launch(out, this);
+        sink.launch(output.reader, this);
         return sink;
     }
     
@@ -49,14 +49,26 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
         this.reader = reader;
     }
     
-    public def launch(inValues:DoubleBuffer[I], parent:StreamNode) {
-        reader = new ClockedReader[I](inValues.reader, inputCount);
-        async clocked(inValues.clock) {
-            while(parent.isAlive()) {
-                work();
-            }
-            eof();
+    public def setOutput(out:DoubleBuffer[O]) {
+        this.output = out;
+    }
+    
+    protected def createReader(reader:DoubleBuffer.Reader[I]) {
+        return new ClockedReader[I](reader, inputCount);
+    }
+    
+    public def launch(bufReader:DoubleBuffer.Reader[I], parent:StreamNode) {
+        reader = createReader(bufReader);
+        async clocked(bufReader.clock) {
+            launch(parent);
         }
+    }
+    
+    def launch(parent:StreamNode) {
+        while(parent.isAlive()) {
+            work();
+        }
+        eof();
     }
     
     def launch() {
@@ -65,3 +77,4 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
         }
     }
 }
+
