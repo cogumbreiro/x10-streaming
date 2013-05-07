@@ -40,7 +40,7 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
         return isAlive;
     }
     
-    public def add[T](sink:Filter[O,T]):Filter[O,T] {T haszero} {
+    public def add[T](sink:Filter[O,T]):Filter[O,T] {
         sink.launch(out, this);
         return sink;
     }
