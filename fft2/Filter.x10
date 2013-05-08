@@ -1,5 +1,6 @@
+import x10.util.concurrent.AtomicBoolean;
+
 abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
-    private var isAlive:Boolean = true;
     private var reader:Reader[I];
     private var output:DoubleBuffer[O];
     
@@ -33,15 +34,15 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
     }
     
     public def eof():void {
-        isAlive = false;
+        output.writer.markError();
     }
     
     public def isAlive():Boolean {
-        return isAlive;
+        return isAlive();
     }
     
     public def add[T](sink:Filter[O,T]):Filter[O,T] {
-        sink.launch(output.reader, this);
+        sink.launch(output.reader);
         return sink;
     }
     
@@ -57,24 +58,22 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
         return new ClockedReader[I](reader, inputCount);
     }
     
-    public def launch(bufReader:DoubleBuffer.Reader[I], parent:StreamNode) {
+    public def launch(bufReader:DoubleBuffer.Reader[I]) {
         reader = createReader(bufReader);
         async clocked(bufReader.clock) {
-            launch(parent);
+            launch();
         }
-    }
-    
-    def launch(parent:StreamNode) {
-        while(parent.isAlive()) {
-            work();
-        }
-        eof();
     }
     
     def launch() {
-        while(isAlive) {
+        while(! reader.isEOF()) {
             work();
         }
     }
+    /*
+    def launch() {I == Empty} {
+        work();
+        eof();
+    }*/
 }
 

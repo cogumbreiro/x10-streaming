@@ -3,7 +3,7 @@ class Main {
         val source = new FFTTestSource(2);
         val sink = new FloatPrinter[Float]();
         source
-          .add(new FloatDuplicate())
+//          .add(new FloatDuplicate())
            /*
           .add(
             new RRSplitJoin[Float,Float](1, 1).
@@ -11,6 +11,7 @@ class Main {
             split(new FloatNegate(), 1)
           )*/
           .add(sink);
-        source.launch();
+        source.work();
+        source.eof();
     }
 }
