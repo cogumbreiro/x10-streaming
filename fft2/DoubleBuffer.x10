@@ -12,11 +12,7 @@ public class DoubleBuffer[T](clock:Clock, reader:DoubleBuffer.Reader[T], writer:
         this.buffer = buffer;
     }
     public def this(clock:Clock) {T haszero} {
-        val buffer = new Array[T](2, Zero.get[T]());
-        property(clock,
-                 new Reader[T](clock, buffer),
-                 new Writer[T](clock, buffer));
-        this.buffer = buffer;
+        this(clock, new Array[T](2, Zero.get[T]()));
     }
     public def this() {T haszero} {
         this(Clock.make());
