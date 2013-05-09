@@ -1,6 +1,6 @@
 import x10.util.concurrent.AtomicBoolean;
 
-abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
+public abstract class Filter[I,O](clock:Clock, inputCount:Int) {
     private var reader:ClockedReader[I];
     private var output:Stream[O];
     
@@ -61,7 +61,7 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
         }
     }
     
-    def start() {
+    public def start() {
         // we are waiting for no one, so we only need one clock
         async clocked(output.clock) {
             work();
@@ -69,7 +69,7 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
         }
     }
     
-    def launch() {
+    public def launch() {
         try {
             while(true) {
                 work();
@@ -77,5 +77,7 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
         } catch (Stream.EOSException) {}
         eof();
     }
+    
+    public abstract def work():void;
 }
 
