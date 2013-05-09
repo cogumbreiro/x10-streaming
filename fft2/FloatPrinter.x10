@@ -8,7 +8,7 @@ float->void filter FloatPrinter
 }
 */
 
-public class FloatPrinter[T] extends Filter[T,Any]
+public class FloatPrinter[T] extends Filter[T,Empty]
 {
     public def work() {
         Console.OUT.println(pop() as Any);

@@ -37,12 +37,8 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
         output.writer.markError();
     }
     
-    public def isAlive():Boolean {
-        return isAlive();
-    }
-    
     public def add[T](sink:Filter[O,T]):Filter[O,T] {
-        sink.launch(output.reader);
+        sink.asyncLaunch(output.reader);
         return sink;
     }
     
@@ -58,7 +54,7 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
         return new ClockedReader[I](reader, inputCount);
     }
     
-    public def launch(bufReader:DoubleBuffer.Reader[I]) {
+    private def asyncLaunch(bufReader:DoubleBuffer.Reader[I]) {
         reader = createReader(bufReader);
         async clocked(bufReader.clock) {
             launch();
@@ -66,9 +62,13 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
     }
     
     def launch() {
+        Console.OUT.println("STARTED " + this);
         while(! reader.isEOF()) {
+            Console.OUT.println(this + ".work()");
             work();
         }
+        eof();
+        Console.OUT.println("ENDED " + this);
     }
     /*
     def launch() {I == Empty} {

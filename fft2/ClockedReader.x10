@@ -5,7 +5,7 @@ public class ClockedReader[T](size:Int, clock:Clock) implements Reader[T] {
     val dbReader:DoubleBuffer.Reader[T];
     var terminated:Boolean = false;
     
-    def this(dbReader:DoubleBuffer.Reader[T], size:Int) {
+    public def this(dbReader:DoubleBuffer.Reader[T], size:Int) {
         property(size, dbReader.clock);
         this.dbReader = dbReader;
         this.buffer = new ArrayList[T](size);
