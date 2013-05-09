@@ -30,15 +30,11 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
     }
     
     public def push(value:O) {
-        //Console.OUT.println(this + ".push(" + value + ")");
         output.writer() = value;
-        //Console.OUT.println(this + ".push(" + value + ") <--- DONE");
     }
     
     public def eof():void {
-        //Console.OUT.println(this + ".eof()");
         output.writer.close();
-        //Console.OUT.println(this + ".eof() <--- DONE");
     }
     
     public def add[T](sink:Filter[O,T]):Filter[O,T] {
@@ -74,21 +70,12 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
     }
     
     def launch() {
-        //Console.OUT.println("STARTED " + this);
         try {
             while(true) {
-                //Console.OUT.println(this + ".work()");
                 work();
             }
         } catch (Stream.EOSException) {}
-        //Console.OUT.println("SEND EOF " + this);
         eof();
-        //Console.OUT.println("ENDED " + this);
     }
-    /*
-    def launch() {I == Empty} {
-        work();
-        eof();
-    }*/
 }
 

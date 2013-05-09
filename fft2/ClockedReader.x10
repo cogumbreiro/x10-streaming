@@ -12,10 +12,7 @@ public class ClockedReader[T](size:Int, clock:Clock) implements Reader[T] {
     }
     
     public def pop() {
-        Console.OUT.println(this + ".pop()");
-        //assert ! isEOF() : "ensure we are not at EOF before calling pop";
         peek(0);
-        //assert ! isEOF() : "this is an internal error";
         return buffer.removeAt(0);
     }
     
@@ -26,18 +23,8 @@ public class ClockedReader[T](size:Int, clock:Clock) implements Reader[T] {
     }
     
     public def peek(idx:Int) {
-        Console.OUT.println(this + ".peek(" + idx + ")");
         assert (0 <= idx) && (idx < size) : "Index out of bounds";
-        //assert ! isEOF();
         prefetch(idx + 1);
-        Console.OUT.println(this + ".peek(" + idx + ") == " + buffer.get(idx));
         return buffer.get(idx);
     }
-    /*
-    public def isEOF() {
-        Console.OUT.println(this + ".isEOF()");
-        if (!terminated) prefetch(1); // if empty, get one element from dbuffer
-        Console.OUT.println(this + ".isEOF() == " + (terminated && buffer.isEmpty()));
-        return terminated && buffer.isEmpty();
-    }*/
 }
