@@ -2,7 +2,7 @@ import x10.util.concurrent.AtomicBoolean;
 
 abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
     private var reader:Reader[I];
-    private var output:DoubleBuffer[O];
+    private var output:Stream[O];
     
     public def this() {O haszero} {
         this(1);
@@ -13,10 +13,10 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
     }
     
     public def this(inputCount:Int, clock:Clock) {O haszero} {
-        this(new DoubleBuffer[O](clock), inputCount);
+        this(new Stream[O](clock), inputCount);
     }
     
-    public def this(out:DoubleBuffer[O], inSize:Int) {
+    public def this(out:Stream[O], inSize:Int) {
         property(out.clock, inSize);
         this.output = out;
     }
@@ -30,11 +30,15 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
     }
     
     public def push(value:O) {
+        Console.OUT.println(this + ".push(" + value + ")");
         output.writer() = value;
+        Console.OUT.println(this + ".push(" + value + ") <--- DONE");
     }
     
     public def eof():void {
-        output.writer.markError();
+        Console.OUT.println(this + ".eof()");
+        output.writer.close();
+        Console.OUT.println(this + ".eof() <--- DONE");
     }
     
     public def add[T](sink:Filter[O,T]):Filter[O,T] {
@@ -46,27 +50,30 @@ abstract class Filter[I,O](clock:Clock, inputCount:Int) implements StreamNode {
         this.reader = reader;
     }
     
-    public def setOutput(out:DoubleBuffer[O]) {
+    public def setOutput(out:Stream[O]) {
         this.output = out;
     }
     
-    protected def createReader(reader:DoubleBuffer.Reader[I]) {
+    protected def createReader(reader:Stream.Reader[I]) {
         return new ClockedReader[I](reader, inputCount);
     }
     
-    private def asyncLaunch(bufReader:DoubleBuffer.Reader[I]) {
+    private def asyncLaunch(bufReader:Stream.Reader[I]) {
         reader = createReader(bufReader);
-        async clocked(bufReader.clock) {
+        async clocked(bufReader.clock, output.clock) {
             launch();
         }
     }
     
     def launch() {
         Console.OUT.println("STARTED " + this);
-        while(! reader.isEOF()) {
-            Console.OUT.println(this + ".work()");
-            work();
-        }
+        try {
+            while(true) {
+                Console.OUT.println(this + ".work()");
+                work();
+            }
+        } catch (Stream.EOSException) {}
+        Console.OUT.println("SEND EOF " + this);
         eof();
         Console.OUT.println("ENDED " + this);
     }
