@@ -7,6 +7,8 @@ public struct Maybe[T] {
     }
     public def isJust() = ! isNothing;
     public def isNothing() = isNothing;
+    public def toNothing() {return new Maybe[T](value, true);}
+    
     public static def make[T](value:T) = new Maybe[T](value, false);
     public static def makeNothing[T](value:T) = new Maybe[T](value, true);
     public static def makeNothing[T]() {T haszero} = makeNothing[T](Zero.get[T]());

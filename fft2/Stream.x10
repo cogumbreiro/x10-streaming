@@ -1,62 +1,135 @@
+import DoubleBuffer.Cursor;
 public struct Stream[T](clock:Clock, reader:Stream.Reader[T], writer:Stream.Writer[T]) {
     public static class EOSException extends Error {}
-    private val buffer:DoubleBuffer[Maybe[T]];
-    public def this(clock:Clock) {T haszero} {
-        this(clock, Zero.get[T]());
+    
+    private static struct Entry[T](lastDatum:Boolean, buffer:Rail[T]){}
+    private static type Element[T] = Cell[Entry[T]];
+    
+    private static def makeElement[T](cacheSize:Int, zero:T) {
+        val buffer = new Rail[T](cacheSize, zero);
+        return Cell.make[Entry[T]](new Entry[T](false, buffer));
     }
     
-    public def this(clock:Clock, zero:T) {
-        val nothing = Maybe.makeNothing[T](zero);
-        val rail = new Rail[Maybe[T]](2, nothing);
-        val buffer = new DoubleBuffer[Maybe[T]](clock, rail);
-        val reader = new Reader[T](clock, buffer.reader);
-        val writer = new Writer[T](clock, buffer.writer, Maybe.Factory.make[T](zero));
-        property(clock, reader, writer);
-        this.buffer = buffer;
+    public def this(cacheSize:Int) {T haszero} {
+        this(Clock.make(), cacheSize);
     }
-    public static struct Writer[T](clock:Clock) {
-        private val buffer:DoubleBuffer.Writer[Maybe[T]];
-        private val factory:Maybe.Factory[T];
-        private def this(clock:Clock, buffer:DoubleBuffer.Writer[Maybe[T]], factory:Maybe.Factory[T]) {
+    
+    public def this(clock:Clock, cacheSize:Int) {T haszero} {
+        this(clock, cacheSize, Zero.get[T]());
+    }
+    
+    public def this(clock:Clock, cacheSize:Int, zero:T) {
+        val elem1 = makeElement[T](cacheSize, zero);
+        val elem2 = makeElement[T](cacheSize, zero);
+        val buffer = new DoubleBuffer[Element[T]](clock, elem1, elem2);
+        val reader = new Reader[T](clock, buffer.first);
+        val writer = new Writer[T](clock, buffer.first);
+        property(clock, reader, writer);
+    }
+    
+    public static class Writer[T](clock:Clock) {
+        private val cursor:Cursor[Element[T]];
+        private var buffer:Rail[T];
+        private var eos:Boolean = false;
+        private var idx:Int = 0;
+        private def this(clock:Clock, cursor:Cursor[Element[T]]) {
             property(clock);
-            this.buffer = buffer;
-            this.factory = factory;
+            this.cursor = cursor;
+            this.buffer = cursor.get()().buffer;
         }
 
         public operator this()=(value:T) {
-            buffer() = Maybe.make[T](value);
+            set(value);
         }
         
-        public def set(value:Maybe[T]):void {
-            buffer() = value;
+        public def set(value:T):void {
+            if (eos) throw new EOSException();
+            buffer(idx) = value;
+            idx += 1;
+            if (idx == buffer.size) {
+                cursor.advance();
+                this.buffer = cursor.get()().buffer;
+                idx = 0;
+            }
+            assert idx < buffer.size; 
         }
-
+        
         public def close():void {
-            buffer() = factory.makeNothing();
+            eos = true;
+            assert idx <= buffer.size;
+            if (idx < buffer.size) {
+                val newBuffer = new Rail[T](idx, (x:Int) => buffer(x));
+                cursor.get()() = new Entry[T](true, newBuffer);
+            } else {
+                cursor.get()() = new Entry[T](true, buffer);
+            }
+            cursor.advance();
         }
     }
-    public static struct Reader[T](clock:Clock) implements ()=>T {
-        private val buffer:DoubleBuffer.Reader[Maybe[T]];
+    
+    public static class Reader[T](clock:Clock) implements ()=>T {
+        private val cursor:Cursor[Element[T]];
+        private var buffer:Rail[T];
+        private var idx:Int;
+        private var eos:Boolean = false;
         
-        private def this(clock:Clock, buffer:DoubleBuffer.Reader[Maybe[T]]) {
+        private def this(clock:Clock, cursor:Cursor[Element[T]]) {
             property(clock);
-            this.buffer = buffer;
+            this.cursor = cursor;
+            this.buffer = cursor.get()().buffer;
+            this.idx = buffer.size;
         }
         
         public def get() throws EOSException:T {
-            val datum = buffer.get();
-            if (datum.isNothing()) {
+            if (eos) {
                 throw new EOSException();
             }
-            return datum.value;
+            assert idx <= buffer.size;
+            if (idx == buffer.size) { // it's empty
+                fetch();
+            }
+            return buffer(idx++);
         }
         
-        public def getMaybe() {
-            return buffer.get();
+        private def fetch() {
+            if (cursor.get()().lastDatum) {
+                eos = true;
+                throw new EOSException();
+            }
+            cursor.advance();
+            buffer = cursor.get()().buffer;
+            idx = 0;
+            if (idx == buffer.size) {
+                eos = false;
+                throw new EOSException();
+            }
         }
         
         public operator this():T {
             return get();
         }
     }
+
+    public static def main(args:Array[String](1)):void {
+        finish async {
+            val clock = Clock.make();
+            val db = new Stream[Int](clock, 1024, 0);
+            val N = 1000000;
+            async clocked(clock) {
+                for (p in 1..N) {
+                    db.writer() = p;
+                }
+                db.writer.close();
+            }
+            async clocked(clock) {
+                try {
+                    while (true) {
+                        //Console.OUT.println(db.reader());
+                        db.reader();
+                    }
+                } catch (Stream.EOSException) {
+                }
+            }
+        }
+    }    
 }

@@ -1,61 +1,42 @@
-import x10.util.Pair;
+//import x10.util.Pair;
 /*
  * (C) 2013 - Tiago Cogumbreiro (cogumbreiro@users.sf.net)
  * MIT License http://opensource.org/licenses/MIT
  */
-public struct DoubleBuffer[T](clock:Clock, reader:DoubleBuffer.Reader[T], writer:DoubleBuffer.Writer[T]) {
-    private val buffer:Rail[T];
+public struct DoubleBuffer[T](clock:Clock, first:DoubleBuffer.Cursor[T], second:DoubleBuffer.Cursor[T]) {
     
-    public def this(clock:Clock, buffer:Rail[T]) {
+    public def this(clock:Clock, first:T, second:T) {
         property(clock,
-                 new Reader[T](clock, buffer),
-                 new Writer[T](clock, buffer));
-        this.buffer = buffer;
+                 new Cursor[T](clock, first, second),
+                 new Cursor[T](clock, first, second));
     }
-    public def this(clock:Clock) {T haszero} {
-        this(clock, new Rail[T](2, Zero.get[T]()));
-    }
-    public def this() {T haszero} {
-        this(Clock.make());
+    
+    public def this(first:T, second:T) {
+        this(Clock.make(), first, second);
     }
 
-    public static final class Reader[T](clock:Clock) implements ()=>T {
-        private val buffer:Rail[T];
-        private val idx = new CircularInt(2);
-        public def this(clock:Clock, buffer:Rail[T]) {
+    public static final class Cursor[T](clock:Clock) implements () => T {
+        private var currBuffer:T;
+        private var nextBuffer:T;
+        public def this(clock:Clock, currBuffer:T, nextBuffer:T) {
             property(clock);
-            this.buffer = buffer;
+            this.currBuffer = currBuffer;
+            this.nextBuffer = nextBuffer;
         }
         public def get():T {
+            return currBuffer;
+        }
+        public def advance():void {
             clock.advance();
-            val result = buffer(idx.get());
-            clock.resume();
-            idx.increment();
-            return result;
+            val result = currBuffer;
+            currBuffer = nextBuffer;
+            nextBuffer = result;
         }
         public operator this():T {
             return get();
         }
     }
-    
-    public static final class Writer[T](clock:Clock) {
-        private val buffer:Rail[T];
-        private val idx = new CircularInt(2);
-        public def this(clock:Clock, buffer:Rail[T]) {
-            property(clock);
-            this.buffer = buffer;
-        }
-        public def set(value:T):void {
-            buffer(idx.get()) = value;
-            clock.resume();
-            idx.increment();
-            clock.advance();
-        }
-        public operator this()=(value:T) {
-            set(value);
-        }
-    }
-    
+
     public static def main(args:Array[String](1)):void {
         /*
         finish async {
