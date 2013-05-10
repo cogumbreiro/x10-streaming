@@ -113,19 +113,22 @@ public struct Stream[T](clock:Clock, reader:Stream.Reader[T], writer:Stream.Writ
     public static def main(args:Array[String](1)):void {
         finish async {
             val clock = Clock.make();
-            val db = new Stream[Int](clock, 1024, 0);
+            val db1 = new Stream[Int](clock, 1024, 0);
+            val db2 = new Stream[Int](clock, 1024, 0);
             val N = 1000000;
             async clocked(clock) {
                 for (p in 1..N) {
-                    db.writer() = p;
+                    db1.writer() = p;
+                    db2.writer() = p;
                 }
-                db.writer.close();
+                db1.writer.close();
+                db2.writer.close();
             }
             async clocked(clock) {
                 try {
                     while (true) {
                         //Console.OUT.println(db.reader());
-                        db.reader();
+                        db1.reader() + db2.reader();
                     }
                 } catch (Stream.EOSException) {
                 }
