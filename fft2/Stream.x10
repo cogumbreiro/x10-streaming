@@ -112,11 +112,12 @@ public struct Stream[T](clock:Clock, reader:Stream.Reader[T], writer:Stream.Writ
 
     public static def main(args:Array[String](1)):void {
         finish async {
-            val clock = Clock.make();
-            val db1 = new Stream[Int](clock, 1024, 0);
-            val db2 = new Stream[Int](clock, 1024, 0);
-            val N = 1000000;
-            async clocked(clock) {
+            val clock1 = Clock.make();
+            val db1 = new Stream[Int](clock1, 1, 0);
+            val clock2 = Clock.make();
+            val db2 = new Stream[Int](clock2, 1, 0);
+            val N = 100000;
+            async clocked(clock1, clock2) {
                 for (p in 1..N) {
                     db1.writer() = p;
                     db2.writer() = p;
@@ -124,7 +125,7 @@ public struct Stream[T](clock:Clock, reader:Stream.Reader[T], writer:Stream.Writ
                 db1.writer.close();
                 db2.writer.close();
             }
-            async clocked(clock) {
+            async clocked(clock1, clock2) {
                 try {
                     while (true) {
                         //Console.OUT.println(db.reader());
