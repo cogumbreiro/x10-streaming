@@ -1,6 +1,12 @@
 public struct Stream[T](clock:Clock, reader:Stream.Reader[T], writer:Stream.Writer[T]) {
     public static class EOSException extends Error {}
+    
     private val buffer:DoubleBuffer[Maybe[T]];
+    
+    public def this() {T haszero} {
+        this(Clock.make());
+    }
+    
     public def this(clock:Clock) {T haszero} {
         this(clock, Zero.get[T]());
     }
@@ -14,6 +20,7 @@ public struct Stream[T](clock:Clock, reader:Stream.Reader[T], writer:Stream.Writ
         property(clock, reader, writer);
         this.buffer = buffer;
     }
+    
     public static struct Writer[T](clock:Clock) {
         private val buffer:DoubleBuffer.Writer[Maybe[T]];
         private val factory:Maybe.Factory[T];
@@ -35,6 +42,7 @@ public struct Stream[T](clock:Clock, reader:Stream.Reader[T], writer:Stream.Writ
             buffer() = factory.makeNothing();
         }
     }
+    
     public static struct Reader[T](clock:Clock) implements ()=>T {
         private val buffer:DoubleBuffer.Reader[Maybe[T]];
         
