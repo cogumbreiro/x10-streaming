@@ -1,7 +1,8 @@
 import x10.util.concurrent.AtomicBoolean;
 
-public abstract class Filter[I,O](clock:Clock, inputCount:Int) {
+public abstract class Filter[I,O](inputCount:Int) {
     private var reader:ClockedReader[I];
+
     private var output:Stream[O];
     
     public def this() {O haszero} {
@@ -38,24 +39,21 @@ public abstract class Filter[I,O](clock:Clock, inputCount:Int) {
     }
     
     public def add[T](sink:Filter[O,T]):Filter[O,T] {
-        sink.asyncLaunch(output.reader);
+        sink.setInput(output.reader);
+        sink.asyncLaunch();
         return sink;
-    }
-    
-    public def setReader(reader:ClockedReader[I]) {
-        this.reader = reader;
     }
     
     public def setOutput(out:Stream[O]) {
         this.output = out;
     }
     
-    protected def createReader(reader:Stream.Reader[I]) {
-        return new ClockedReader[I](reader, inputCount);
+    public def setInput(input:Stream.Reader[I]) {
+        this.reader = new ClockedReader[I](reader, inputCount);
     }
     
-    private def asyncLaunch(bufReader:Stream.Reader[I]) {
-        reader = createReader(bufReader);
+    protected def asyncLaunch() {
+        assert reader != null : "call setInput(reader) first";
         async clocked(bufReader.clock, output.clock) {
             launch();
         }
@@ -69,7 +67,7 @@ public abstract class Filter[I,O](clock:Clock, inputCount:Int) {
         }
     }
     
-    public def launch() {
+    protected def launch() {
         try {
             while(true) {
                 work();
