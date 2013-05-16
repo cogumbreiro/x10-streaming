@@ -1,4 +1,5 @@
 import DoubleBuffer.Cursor;
+import x10.util.Pair;
 public struct Stream[T](clock:Clock, reader:Stream.Reader[T], writer:Stream.Writer[T]) {
     public static class EOSException extends Error {}
     
@@ -32,7 +33,7 @@ public struct Stream[T](clock:Clock, reader:Stream.Reader[T], writer:Stream.Writ
         private var buffer:Rail[T];
         private var eos:Boolean = false;
         private var idx:Int = 0;
-        private def this(clock:Clock, cursor:Cursor[Element[T]]) {
+        public def this(clock:Clock, cursor:Cursor[Element[T]]) {
             property(clock);
             this.cursor = cursor;
             this.buffer = cursor.get()().buffer;
@@ -73,11 +74,19 @@ public struct Stream[T](clock:Clock, reader:Stream.Reader[T], writer:Stream.Writ
         private var idx:Int;
         private var eos:Boolean = false;
         
-        private def this(clock:Clock, cursor:Cursor[Element[T]]) {
+        public def this(clock:Clock, cursor:Cursor[Element[T]]) {
             property(clock);
             this.cursor = cursor;
             this.buffer = cursor.get()().buffer;
             this.idx = buffer.size;
+        }
+        
+        private def this(clock:Clock, cursor:Cursor[Element[T]], idx:Int, eos:Boolean) {
+            property(clock);
+            this.cursor = cursor;
+            this.buffer = cursor.get()().buffer;
+            this.idx = idx;
+            this.eos = eos;
         }
         
         public def get() throws EOSException:T {
@@ -108,32 +117,60 @@ public struct Stream[T](clock:Clock, reader:Stream.Reader[T], writer:Stream.Writ
         public operator this():T {
             return get();
         }
+        
+        public def copy():Reader[T] {
+            return new Reader[T](clock, cursor, idx, eos);
+        }
+    }
+    
+    public static def makeBroadcastStream[T](readerCount:Int, clock:Clock, cacheSize:Int, zero:T):Pair[Writer[T],Rail[Reader[T]]] {
+        if (readerCount < 1) {
+            throw new IllegalArgumentException();
+        }
+        val stream = new Stream[T](clock, cacheSize, zero);
+        
+        val readers = new Rail[Reader[T]](readerCount, (x:Int) => x == 0 ? stream.reader : stream.reader.copy());
+        return new Pair[Writer[T], Rail[Reader[T]]](stream.writer, readers);
     }
 
     public static def main(args:Array[String](1)):void {
         finish async {
+            val T = 1;
             val clock1 = Clock.make();
-            val db1 = new Stream[Int](clock1, 1, 0);
+            //val db1 = new Stream[Int](clock1, 1, 0);
+            val db1 = makeBroadcastStream(3, clock1, 1, 0);
             val clock2 = Clock.make();
-            val db2 = new Stream[Int](clock2, 1, 0);
+            //val db2 = new Stream[Int](clock2, 1, 0);
+            val db2 = makeBroadcastStream[Int](3, clock2, 1, 0);
             val N = 100000;
             async clocked(clock1, clock2) {
+//                val writer1 = db1.writer;
+//                val writer2 = db2.writer;
+                val writer1 = db1.first;
+                val writer2 = db2.first;
                 for (p in 1..N) {
-                    db1.writer() = p;
-                    db2.writer() = p;
+                    writer1() = p;
+                    writer2() = p;
                 }
-                db1.writer.close();
-                db2.writer.close();
+                writer1.close();
+                writer2.close();
             }
-            async clocked(clock1, clock2) {
-                try {
-                    while (true) {
-                        //Console.OUT.println(db.reader());
-                        db1.reader() + db2.reader();
+            //for (p in 0..(T-1)) {
+                val reader1 = db1.second(0);
+                val reader2 = db2.second(0);
+                //val reader1 = db1.reader;
+                //val reader2 = db2.reader;
+                
+                async clocked(clock1, clock2) {
+                    try {
+                        while (true) {
+                            //Console.OUT.println(db.reader());
+                            Console.OUT.println(reader1() + reader2());
+                        }
+                    } catch (Stream.EOSException) {
                     }
-                } catch (Stream.EOSException) {
                 }
-            }
+            //}
         }
     }    
 }
