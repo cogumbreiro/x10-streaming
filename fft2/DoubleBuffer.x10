@@ -3,38 +3,34 @@
  * (C) 2013 - Tiago Cogumbreiro (cogumbreiro@users.sf.net)
  * MIT License http://opensource.org/licenses/MIT
  */
-public struct DoubleBuffer[T](clock:Clock, first:DoubleBuffer.Cursor[T], second:DoubleBuffer.Cursor[T]) {
+public class DoubleBuffer[T](clock:Clock) implements () => T {
     
-    public def this(clock:Clock, first:T, second:T) {
-        property(clock,
-                 new Cursor[T](clock, first, second),
-                 new Cursor[T](clock, first, second));
+    private var currBuffer:T;
+    private var nextBuffer:T;
+    
+    public def this(clock:Clock, currBuffer:T, nextBuffer:T) {
+        property(clock);
+        this.currBuffer = currBuffer;
+        this.nextBuffer = nextBuffer;
     }
     
-    public def this(first:T, second:T) {
-        this(Clock.make(), first, second);
+    public def get():T {
+        return currBuffer;
     }
-
-    public static final class Cursor[T](clock:Clock) implements () => T {
-        private var currBuffer:T;
-        private var nextBuffer:T;
-        public def this(clock:Clock, currBuffer:T, nextBuffer:T) {
-            property(clock);
-            this.currBuffer = currBuffer;
-            this.nextBuffer = nextBuffer;
-        }
-        public def get():T {
-            return currBuffer;
-        }
-        public def advance():void {
-            clock.advance();
-            val result = currBuffer;
-            currBuffer = nextBuffer;
-            nextBuffer = result;
-        }
-        public operator this():T {
-            return get();
-        }
+    
+    public def advance():void {
+        clock.advance();
+        val result = currBuffer;
+        currBuffer = nextBuffer;
+        nextBuffer = result;
+    }
+    
+    public operator this():T {
+        return get();
+    }
+    
+    public def copy() {
+        return new DoubleBuffer[T](clock, currBuffer, nextBuffer);
     }
 
     public static def main(args:Array[String](1)):void {
